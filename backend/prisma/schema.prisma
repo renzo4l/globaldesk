@@ -1,0 +1,285 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  COLABORADOR
+  ANALISTA_N1
+  ANALISTA_N2
+  ANALISTA_N3
+  ADMIN
+}
+
+enum SupportTier {
+  N1
+  N2
+  N3
+}
+
+enum TicketType {
+  INCIDENTE
+  REQUISICAO_SERVICO
+}
+
+enum ImpactLevel {
+  ORGANIZACAO
+  SETOR
+  USUARIO_UNICO
+}
+
+enum UrgencyLevel {
+  CRITICA
+  ALTA
+  MEDIA
+  BAIXA
+}
+
+enum PriorityLevel {
+  CRITICA
+  ALTA
+  MEDIA
+  BAIXA
+}
+
+enum TicketStatus {
+  NOVO
+  EM_ATENDIMENTO
+  AGUARDANDO_USUARIO
+  RESOLVIDO
+}
+
+enum NoteVisibility {
+  PUBLIC
+  INTERNAL
+}
+
+enum AssetCategory {
+  COMPUTADOR
+  NOTEBOOK
+  MONITOR
+  PERIFERICO
+  IMPRESSORA
+  REDE_SERVIDOR
+  CELULAR_TABLET
+  LICENCA_SOFTWARE
+  OUTROS
+}
+
+enum AssetStatus {
+  DISPONIVEL
+  EM_USO
+  MANUTENCAO
+  BAIXADO_DESCARTADO
+}
+
+enum AssetCondition {
+  NOVO
+  BOM
+  DESGASTADO
+  DEFEITUOSO
+}
+
+enum MovementType {
+  AQUISICAO
+  MOVIMENTACAO_ENTREGA
+  DEVOLUCAO
+  MANUTENCAO
+  EXCLUSAO_BAIXA
+}
+
+model User {
+  id                  String       @id @default(uuid())
+  name                String
+  email               String       @unique
+  passwordHash        String?
+  role                UserRole     @default(COLABORADOR)
+  tier                SupportTier?
+  department          String
+  avatarInitials      String?
+  status              String       @default("Ativo")
+  isGoogleVerified    Boolean      @default(false)
+  googleAccountDomain String?
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  ticketsRequested Ticket[]       @relation("RequesterTickets")
+  ticketsAssigned  Ticket[]       @relation("AssigneeTickets")
+  notesWritten     TicketNote[]
+  ordersExecuted   ServiceOrder[] @relation("TechnicianOrders")
+  assetsAssigned   Asset[]        @relation("UserAssignedAssets")
+}
+
+model Ticket {
+  id          String        @id
+  title       String
+  description String        @db.Text
+  type        TicketType    @default(INCIDENTE)
+  category    String
+  department  String
+  impact      ImpactLevel
+  urgency     UrgencyLevel
+  priority    PriorityLevel
+  status      TicketStatus  @default(NOVO)
+  tier        SupportTier   @default(N1)
+
+  requesterId String
+  requester   User   @relation("RequesterTickets", fields: [requesterId], references: [id])
+
+  assigneeId String?
+  assignee   User?   @relation("AssigneeTickets", fields: [assigneeId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sla          TicketSla?
+  notes        TicketNote[]
+  auditTrail   TicketAuditTrail[]
+  serviceOrder ServiceOrder?
+
+  @@index([status])
+  @@index([priority])
+  @@index([assigneeId])
+  @@index([requesterId])
+  @@index([createdAt])
+  @@index([status, createdAt])
+  @@index([requesterId, createdAt])
+}
+
+model TicketSla {
+  id                          String   @id @default(uuid())
+  ticketId                    String   @unique
+  ticket                      Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  firstResponseTargetMinutes  Int
+  firstResponseElapsedMinutes Int      @default(0)
+  firstResponseMet            Boolean  @default(false)
+  resolutionTargetMinutes     Int
+  resolutionRemainingMinutes  Int
+  health                      String   @default("within_sla")
+  updatedAt                   DateTime @updatedAt
+}
+
+model TicketNote {
+  id             String         @id @default(uuid())
+  ticketId       String
+  ticket         Ticket         @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  authorId       String
+  author         User           @relation(fields: [authorId], references: [id])
+  visibility     NoteVisibility @default(PUBLIC)
+  category       String?
+  targetTechName String?
+  commandSnippet String?        @db.Text
+  content        String         @db.Text
+  createdAt      DateTime       @default(now())
+
+  @@index([ticketId, createdAt])
+  @@index([authorId])
+}
+
+model TicketAuditTrail {
+  id          String   @id @default(uuid())
+  ticketId    String
+  ticket      Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  actorName   String
+  actionType  String
+  description String   @db.Text
+  createdAt   DateTime @default(now())
+
+  @@index([ticketId, createdAt])
+}
+
+model ServiceOrder {
+  id                  String   @id
+  ticketId            String   @unique
+  ticket              Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  technicianId        String
+  technician          User     @relation("TechnicianOrders", fields: [technicianId], references: [id])
+  interventionType    String
+  finalizationOutcome String
+  outcomeLabel        String
+  solutionSummary     String   @db.Text
+  nonCompletionReason String?  @db.Text
+  partsOrSupplies     String?  @db.Text
+  clientAcceptance    String   @db.Text
+  startedAt           String
+  finalizedAt         String
+  durationText        String
+  slaMet              Boolean
+  createdAt           DateTime @default(now())
+
+  @@index([technicianId])
+  @@index([createdAt])
+}
+
+model KnowledgeArticle {
+  id          String   @id @default(uuid())
+  title       String
+  category    String
+  summary     String
+  content     String   @db.Text
+  tags        String?
+  authorName  String
+  views       Int      @default(0)
+  isPublished Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Asset {
+  id             String         @id @default(uuid())
+  assetTag       String         @unique
+  name           String
+  brand          String
+  model          String
+  serialNumber   String         @unique
+  category       AssetCategory
+  status         AssetStatus    @default(DISPONIVEL)
+  condition      AssetCondition @default(NOVO)
+  specifications String?        @db.Text
+  purchaseDate   DateTime?
+  invoiceNumber  String?
+  supplier       String?
+  purchaseValue  Float?
+  warrantyUntil  DateTime?
+  department     String
+  location       String?
+  assignedToId   String?
+  assignedTo     User?          @relation("UserAssignedAssets", fields: [assignedToId], references: [id], onDelete: SetNull)
+  notes          String?        @db.Text
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  movements AssetMovement[]
+
+  @@index([assetTag])
+  @@index([status])
+  @@index([category])
+  @@index([department])
+  @@index([assignedToId])
+  @@index([createdAt])
+  @@index([status, createdAt])
+}
+
+model AssetMovement {
+  id                  String         @id @default(uuid())
+  termNumber          String         @unique
+  assetId             String
+  asset               Asset          @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  type                MovementType
+  fromUserName        String?
+  toUserName          String?
+  fromDepartment      String?
+  toDepartment        String?
+  performedByName     String
+  reason              String         @db.Text
+  conditionAtMoment   AssetCondition
+  accessoriesIncluded String?
+  disposalMethod      String?
+  createdAt           DateTime       @default(now())
+
+  @@index([assetId, createdAt])
+}

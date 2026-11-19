@@ -1,0 +1,43 @@
+# Dependências Node.js
+node_modules/
+**/node_modules/
+
+# Builds intermediários de desenvolvimento (o pacote pronto fica em Deploy_GlobalDesk/)
+frontend/dist/
+backend/dist/
+coverage/
+
+# Variáveis de ambiente e segredos locais (Zero-Trust)
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+**/.env
+**/.env.local
+!**/.env.example
+!**/.env.production.template
+
+# Logs e diagnósticos
+logs/
+**/logs/
+*.log
+npm-debug.log*
+
+# Diretórios de IDEs e assistentes locais
+.vscode/
+.idea/
+.agents/
+.claude/
+.cursor/
+.devin/
+.aistudio/
+**/.agents/
+**/.claude/
+**/.cursor/
+**/.devin/
+**/.aistudio/
+
+# Sistema Operacional
+.DS_Store
+Thumbs.db
