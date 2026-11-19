@@ -4,16 +4,6 @@
 
 ---
 
-## 📋 Descrição para o Repositório GitHub (About / Description)
-
-> **Descrição curta sugerida para o GitHub:**  
-> `Plataforma corporativa Full-Stack de Service Desk (ITSM) e Gestão de Inventário/Ativos de TI (CMDB) baseada em ITIL v4, com arquitetura Zero-Trust, SLA automatizado e geração de O.S. e Termos Patrimoniais em PDF (React 19, TypeScript, Node.js, Express, Prisma & PostgreSQL).`
-
-> **Topics sugeridos:**  
-> `itsm` `itil-v4` `service-desk` `cmdb` `asset-management` `react` `typescript` `tailwindcss` `nodejs` `express` `prisma` `postgresql` `zero-trust` `windows-server` `iis`
-
----
-
 ## ✨ Principais Módulos e Funcionalidades
 
 ### 1. 🖥️ Console Operacional Técnico (`/tecnico` — Zendesk Agent Workspace Style)
